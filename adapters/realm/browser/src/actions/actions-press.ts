@@ -184,6 +184,39 @@ export function pressKeys(args: Record<string, unknown>): string[] {
   return pressKeysFromArgs(args);
 }
 
+/**
+ * Whether a browser sends `keypress` for this key: one that produces a character, or Enter.
+ *
+ * Escape, Tab, arrows and bare modifiers have multi-character `key` names and get none. Neither
+ * does a Control or Meta shortcut, which Chromium delivers as keydown/keyup only.
+ */
+function firesKeypress(key: string, mods: ModifierFlags): boolean {
+  if (mods.ctrlKey || mods.metaKey) return false;
+  return 'Enter' === key || 1 === [...key].length;
+}
+
+/**
+ * Send the `keypress` a browser sends after a `keydown` that went through.
+ *
+ * A page reading keys off `keypress` — a barcode scanner listening on `window`, an older shortcut
+ * library — saw nothing from a bare keydown/keyup pair while the press reported success. A
+ * cancelled `keydown` suppresses it, as it does in a browser.
+ */
+export function dispatchKeypress(
+  el: ActionTarget,
+  key: string,
+  code: string,
+  mods: ModifierFlags,
+  keydownProceeded: boolean,
+): void {
+  if (!keydownProceeded || !firesKeypress(key, mods)) return;
+  asSyntheticInput(() =>
+    el.dispatchEvent(
+      new KeyboardEvent('keypress', { key, code, bubbles: true, cancelable: true, ...mods }),
+    ),
+  );
+}
+
 /** How often a held key repeats. Browsers land near 30-35ms after the initial delay; this is that. */
 const KEY_REPEAT_MS = 33;
 /** The pause before auto-repeat starts, as a real keyboard has. */
@@ -206,7 +239,7 @@ export async function holdKey(
   const started = Date.now();
   if (ms > KEY_REPEAT_DELAY_MS) await sleep(KEY_REPEAT_DELAY_MS);
   while (Date.now() - started < ms) {
-    asSyntheticInput(() =>
+    const repeated = asSyntheticInput(() =>
       el.dispatchEvent(
         new KeyboardEvent('keydown', {
           key,
@@ -218,6 +251,7 @@ export async function holdKey(
         }),
       ),
     );
+    dispatchKeypress(el, key, code, mods, repeated); // a browser repeats keypress with the keydown
     await sleep(Math.min(KEY_REPEAT_MS, Math.max(0, ms - (Date.now() - started))));
   }
 }
@@ -292,6 +326,7 @@ export async function pressCombo(
     if (flag !== undefined) pressFlag(flag);
     const ok = dispatch('keydown', key);
     if (!ok) prevented = true;
+    dispatchKeypress(el, key, pressCode({}, key), held, ok);
     // The same default a single Escape gets: `keys: ["Escape"]` is the same key.
     closeModalOnEscape(el, key, ok);
   }

@@ -1,0 +1,3 @@
+### Fixed
+
+- **`@reticlehq/browser` — `press` now fires `keypress` between `keydown` and `keyup`.** The in-page `press` sent only the two outer events, so a page that reads keys off `keypress` (a barcode-scanner listener on `window`, an older shortcut library, a PIN pad) saw nothing while the action reported success. It now sends `keypress` the way a browser does: for a key that produces a character and for Enter, with each auto-repeat of a held key, and for the character key of a `keys` combo. Escape, Tab, arrows, bare modifiers, Control/Meta shortcuts and a cancelled `keydown` get none. Closes [#1412](https://github.com/reticlehq/reticle/issues/1412).

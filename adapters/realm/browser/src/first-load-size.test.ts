@@ -303,8 +303,14 @@ const DIST_ENTRY = join(PACKAGE_ROOT, 'dist', 'index.js');
  * holding for longer through one route than the other, which is the defect the clamp exists to stop.
  *
  * Raised by 1,000 over the measurement (247,238), rounded down to the hundred, per the note above.
+ *
+ * 248_200 -> 249_200, for `press` sending the `keypress` a browser sends between keydown and keyup
+ * (#1412). Measured by building each tree and rerunning this bundler: main 247,983, with the
+ * keypress 248,255 (+272), over the old ceiling by 55. It is functionality rather than drift: a
+ * page reading keys off `keypress` — a barcode scanner listening on `window` — saw nothing from a
+ * press that reported success. Raised by 1,000 over the measurement, rounded down to the hundred.
  */
-const MAX_FIRST_LOAD_BYTES = 248_200;
+const MAX_FIRST_LOAD_BYTES = 249_200;
 /*
  * Raised a fifth time, 233_300 -> 233_400, for a route to be assertable in a SAVED flow. 57 B.
  *

@@ -39,6 +39,7 @@ import {
   holdKey,
   pressCombo,
   closeModalOnEscape,
+  dispatchKeypress,
 } from './actions-press.js';
 
 /**
@@ -687,6 +688,7 @@ async function dispatchOther(
         ),
       );
       closeModalOnEscape(el, key, down); // on keydown, as a browser does, before any hold
+      dispatchKeypress(el, key, code, mods, down);
       // A HELD key, with the auto-repeat a browser sends while it is down.
       //
       // The mouse has had `holdMs` since hold-to-confirm; the keyboard did not, so a key that has to
